@@ -175,7 +175,8 @@ def train():
                     actuals = [val_dataset.get_example(i) for i in range(len(predicts))]
                     # XXX
                     # get your label. NLI
-                    actuals = [[STR2LABEL[i]] for i in actuals]
+                    if args.task == 'nli':
+                        actuals = [[LABEL2STR[i['label']]] for i in actuals]
                     scores = get_scores(predicts, actuals)
                 else:
                     scores = {}
@@ -290,10 +291,6 @@ if __name__=='__main__':
     if accelerator.is_main_process:
         with open(os.path.join(args.output_dir,'args.txt'), 'w') as f:
             json.dump(args.__dict__, f, indent=2)
-#         wandb.init(project='ACL_2025')
-#         wandb.run.name = args.test_name
-#         wandb.run.save()
-#         wandb.config.update(args)
     ########################################################################################
 
     ########################################################################################
@@ -321,15 +318,6 @@ if __name__=='__main__':
         args.gradient_accumulation_steps = accelerator.state.deepspeed_plugin.deepspeed_config[
             "gradient_accumulation_steps"
         ]
-    # Scheduler and math around the number of training steps.
-    # num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
-    # if args.max_train_steps is None:
-    #     args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
-    # else:
-    #     args.num_train_epochs = math.ceil(args.max_train_steps / num_update_steps_per_epoch)
-
-    # New Code #
-    # Creates Dummy Scheduler if `scheduler` was spcified in the config file else creates `args.lr_scheduler_type` Scheduler
     t_total = len(train_dataloader)*args.epochs//args.accumulation_steps
     n_warmup = int(t_total*args.warmup) if args.warmup<1 else int(args.warmup)//(torch.cuda.device_count())
     if (

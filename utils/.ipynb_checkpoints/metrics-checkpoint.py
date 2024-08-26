@@ -23,7 +23,7 @@ def get_scores(predictions:List[str], actuals:List[List[str]]):
         total_f1.append(f1)
         total_em.append(em)
     scores['f1']=sum(total_f1)/len(total_f1)
-    scores['rouge_l']=sum(total_rouge_l)/len(total_rouge_l)
+    scores['em']=sum(total_em)/len(total_em)
     return scores
 
 # get max
