@@ -103,7 +103,8 @@ def load_dataloaders(args, tokenizer):
     
     #### datasets
     if args.task == 'qa':
-        pass
+        train_dataset = QADataset(train_data, tokenizer, args.max_length, args.eval_max_length, args.add_bos_token, args.add_eos_token)
+        val_dataset = QADataset(val_data, tokenizer, args.max_length, args.eval_max_length, args.add_bos_token, args.add_eos_token)
     elif args.task == 'nli':
         train_dataset = NLIDataset(train_data, tokenizer, args.max_length, args.eval_max_length, args.add_bos_token, args.add_eos_token)
         val_dataset = NLIDataset(val_data, tokenizer, args.max_length, args.eval_max_length, args.add_bos_token, args.add_eos_token)
@@ -177,6 +178,8 @@ def train():
                     # get your label. NLI
                     if args.task == 'nli':
                         actuals = [[LABEL2STR[i['label']]] for i in actuals]
+                    elif args.task =='qa':
+                        actuals = [[i['answer']] for i in actuals]
                     scores = get_scores(predicts, actuals)
                 else:
                     scores = {}
@@ -232,7 +235,7 @@ def evaluation(args, accelerator, model, tokenizer, eval_dataloader, generate=Tr
                 model_to_generate = model.module if hasattr(model,'module') else model
                 max_new_tokens = args.max_new_tokens
                 streamer=None
-                if args.eval_batch_size == 1:
+                if args.eval_batch_size == 1 and accelerator.is_main_process:
                     streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
                 predict = model_to_generate.generate(
                     input_ids = data['eval_input_ids'],
@@ -241,7 +244,6 @@ def evaluation(args, accelerator, model, tokenizer, eval_dataloader, generate=Tr
                     num_beams = 1,
                     max_new_tokens=args.max_new_tokens,
                     streamer = streamer)
-                
                 # predict postprossessing
                 input_len = data['eval_input_ids'].size(1) # bs, seq_len
                 predict = predict[:,input_len:].contiguous()
