@@ -1,0 +1,1 @@
+accelerate launch train_classification.py --data_name nyu-mll/multi_nli --output_dir . --plm_path TinyLlama/TinyLlama_v1.1 --save_model_every_epoch
